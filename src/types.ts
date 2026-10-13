@@ -46,6 +46,6 @@ export class BotHelpers {
   }
 
   getTenantMessageId(): string | undefined {
-    return this.msg.key.id;
+    return this.msg.key.id ?? undefined;
   }
 }
