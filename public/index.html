@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mi Bot WhatsApp</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #10141d;
+      --panel: #191f2b;
+      --line: #303849;
+      --field: #424d61;
+      --text: #f4f7fb;
+      --muted: #aab4c5;
+      --green: #22c55e;
+      --green-ink: #07150c;
+      --danger: #b91c1c;
+      --warn: #fbbf24;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 20px;
+      font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg); color: var(--text);
+    }
+    main { max-width: 1080px; margin: auto; }
+    h1 { color: var(--green); }
+    h2 { margin-top: 0; }
+    h3 { margin: 22px 0 8px; font-size: 16px; }
+    .panel {
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 12px; padding: 18px; margin: 16px 0;
+    }
+    label { display: block; font-size: 14px; color: #d7deea; }
+    input, select {
+      width: 100%; padding: 12px; margin: 7px 0 14px;
+      border-radius: 7px; border: 1px solid var(--field);
+      background: var(--bg); color: white; font: inherit;
+    }
+    textarea {
+      width: 100%; padding: 12px; margin: 7px 0 10px;
+      border-radius: 7px; border: 1px solid var(--field);
+      background: var(--bg); color: white; resize: vertical;
+      min-height: 84px; font: inherit;
+    }
+    input[type="checkbox"] { width: auto; margin: 0; accent-color: var(--green); }
+    button {
+      border: 0; border-radius: 7px; padding: 11px 14px;
+      margin: 4px; cursor: pointer; font-weight: bold; font-family: inherit;
+      background: var(--green); color: var(--green-ink);
+    }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .secondary { background: #364155; color: white; }
+    .danger { background: var(--danger); color: white; }
+    .tenant { border-top: 1px solid var(--line); padding: 14px 0; }
+    .muted { color: var(--muted); }
+    #qrImage {
+      display: block; width: 280px; max-width: 100%;
+      margin: 20px auto; background: white; padding: 10px;
+      border-radius: 10px;
+    }
+    #qrPanel { text-align: center; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    :focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
+
+    /* ---------- Flujos ---------- */
+    .flows-grid {
+      display: grid; grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 28px; align-items: start;
+    }
+    .row { display: flex; gap: 8px; align-items: center; }
+    .row select { flex: 1; margin: 7px 0; }
+    .row button { margin: 0; }
+    .checks { margin: 2px 0 6px; }
+    .check { display: flex; gap: 8px; align-items: center; margin: 8px 0; cursor: pointer; }
+    .hint { color: var(--muted); font-size: 13px; margin: 6px 0 10px; min-height: 1.3em; }
+    .warn {
+      color: var(--warn); background: rgba(251, 191, 36, .08);
+      border: 1px solid rgba(251, 191, 36, .35); border-radius: 7px;
+      padding: 8px 10px; font-size: 13px; margin: 6px 0 10px;
+    }
+    .warn[hidden], button[hidden] { display: none; }
+    .flow-notice { min-height: 1.3em; margin: 10px 0 0; font-size: 14px; color: #86efac; }
+    .flow-notice.error { color: #fca5a5; }
+    .flow-item {
+      border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px;
+      margin: 8px 0; background: var(--bg);
+    }
+    .flow-item.is-editing { border-color: var(--green); }
+    .flow-top { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+    .flow-trigger { font-weight: 700; overflow-wrap: anywhere; }
+    .flow-badge { font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 6px; }
+    .flow-resp {
+      color: var(--muted); font-size: 13px; margin: 4px 0 8px; white-space: pre-wrap;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .flow-actions { display: flex; gap: 6px; }
+    .btn-sm { padding: 6px 10px; font-size: 13px; margin: 0; }
+    .switch {
+      appearance: none; -webkit-appearance: none; width: 36px; height: 20px; margin: 0;
+      border-radius: 20px; background: #364155; position: relative; cursor: pointer; flex: none;
+      transition: background .15s;
+    }
+    .switch::after {
+      content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+      border-radius: 50%; background: white; transition: transform .15s;
+    }
+    .switch:checked { background: var(--green); }
+    .switch:checked::after { transform: translateX(16px); }
+
+    /* ---------- Teléfono ---------- */
+    .flows-right { position: sticky; top: 16px; }
+    .seg {
+      display: flex; gap: 4px; background: var(--bg); border: 1px solid var(--line);
+      border-radius: 9px; padding: 3px; width: 344px; max-width: 100%; margin: 0 auto 12px;
+    }
+    .seg button {
+      flex: 1; margin: 0; background: transparent; color: var(--muted);
+      padding: 8px 10px; border-radius: 7px;
+    }
+    .seg button[aria-pressed="true"] { background: var(--green); color: var(--green-ink); }
+    .phone {
+      width: 344px; max-width: 100%; height: min(640px, calc(100vh - 110px)); min-height: 440px;
+      margin: 0 auto; border-radius: 34px; border: 8px solid #05080b; background: #0b141a;
+      display: flex; flex-direction: column; overflow: hidden;
+      box-shadow: 0 0 0 1px #2a3340, 0 24px 48px rgba(0, 0, 0, .45);
+      font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+    .wa-head {
+      display: flex; align-items: center; gap: 10px; padding: 10px;
+      background: #202c33; color: #e9edef;
+    }
+    .wa-head svg { width: 20px; height: 20px; fill: #aebac1; flex: none; }
+    .wa-avatar {
+      width: 36px; height: 36px; border-radius: 50%; background: #00a884; color: #06130f;
+      display: grid; place-items: center; font-weight: 700; flex: none;
+    }
+    .wa-title { flex: 1; min-width: 0; line-height: 1.25; }
+    .wa-title strong {
+      display: block; font-size: 15px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .wa-title span { font-size: 12px; color: #8696a0; }
+    .wa-chat {
+      flex: 1; overflow-y: auto; position: relative; padding: 10px 10px 8px;
+      display: flex; flex-direction: column; gap: 3px;
+      background-color: #0b141a;
+      background-image: radial-gradient(rgba(255, 255, 255, .035) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .chip {
+      align-self: center; background: #182229; color: #8696a0; font-size: 12px;
+      padding: 5px 10px; border-radius: 8px; margin: 6px 0; text-align: center; max-width: 90%;
+    }
+    .pair {
+      display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px;
+      border-radius: 10px; cursor: pointer;
+    }
+    .pair.paused { opacity: .45; }
+    .pair.selected .bubble { box-shadow: 0 0 0 2px var(--green); }
+    .pair.draft .bubble { outline: 1px dashed rgba(255, 255, 255, .4); outline-offset: 2px; }
+    .pair.pop { animation: pop .3s ease-out; }
+    @keyframes pop {
+      from { opacity: 0; transform: translateY(8px) scale(.97); }
+      to { opacity: 1; transform: none; }
+    }
+    .bubble {
+      position: relative; max-width: 84%; padding: 6px 8px 6px 9px; border-radius: 8px;
+      font-size: 14.2px; line-height: 1.35; color: #e9edef;
+      white-space: pre-wrap; overflow-wrap: anywhere;
+      box-shadow: 0 1px .5px rgba(0, 0, 0, .25);
+    }
+    .bubble.out { align-self: flex-end; background: #005c4b; border-top-right-radius: 0; }
+    .bubble.in { align-self: flex-start; background: #202c33; border-top-left-radius: 0; }
+    .bubble::before { content: ""; position: absolute; top: 0; width: 8px; height: 13px; }
+    .bubble.out::before { right: -8px; background: #005c4b; clip-path: polygon(0 0, 100% 0, 0 100%); }
+    .bubble.in::before { left: -8px; background: #202c33; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+    .bubble.cont::before { display: none; }
+    .bubble.cont.out { border-top-right-radius: 8px; }
+    .bubble.cont.in { border-top-left-radius: 8px; }
+    .bubble.ghost .btext { opacity: .55; font-style: italic; }
+    .bubble code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; }
+    .meta {
+      float: right; margin: 7px 0 -3px 12px; font-size: 11px; line-height: 1;
+      color: rgba(233, 237, 239, .6); display: inline-flex; align-items: center; gap: 3px;
+    }
+    .meta svg { width: 16px; height: 10px; }
+    .typing { display: inline-flex; gap: 4px; padding: 5px 2px; }
+    .typing i {
+      width: 7px; height: 7px; border-radius: 50%; background: #8696a0;
+      animation: blink 1.1s infinite ease-in-out;
+    }
+    .typing i:nth-child(2) { animation-delay: .18s; }
+    .typing i:nth-child(3) { animation-delay: .36s; }
+    @keyframes blink { 0%, 60%, 100% { opacity: .3; } 30% { opacity: 1; } }
+    .wa-input { display: flex; align-items: center; gap: 8px; padding: 8px; background: #0b141a; margin: 0; }
+    .wa-input .field {
+      flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0;
+      background: #202c33; border-radius: 22px; padding: 0 12px;
+    }
+    .wa-input .field svg { width: 22px; height: 22px; fill: #8696a0; flex: none; }
+    .wa-input input {
+      flex: 1; min-width: 0; width: auto; background: transparent; border: 0; border-radius: 0;
+      color: #e9edef; padding: 11px 0; margin: 0; font-size: 15px; outline: none;
+    }
+    .wa-input input::placeholder { color: #8696a0; }
+    .wa-input input:disabled { cursor: not-allowed; }
+    .wa-send {
+      width: 42px; height: 42px; margin: 0; padding: 0; border-radius: 50%;
+      background: #00a884; display: grid; place-items: center; flex: none;
+    }
+    .wa-send svg { width: 20px; height: 20px; fill: #06130f; }
+    .phone-foot {
+      width: 344px; max-width: 100%; margin: 10px auto 0; font-size: 13px; color: var(--muted);
+      display: flex; gap: 10px; justify-content: space-between; align-items: baseline;
+    }
+    .link {
+      background: none; color: #93c5fd; padding: 0; margin: 0; font-weight: 600;
+      text-decoration: underline; white-space: nowrap;
+    }
+
+    @media (max-width: 920px) {
+      .flows-grid { grid-template-columns: minmax(0, 1fr); }
+      .flows-right { position: static; order: -1; }
+      .phone { height: 480px; }
+    }
+    @media (max-width: 520px) {
+      body { padding: 12px; }
+      .panel { padding: 14px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .pair.pop, .typing i { animation: none; }
+      .switch, .switch::after { transition: none; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>🤖 Mi Bot de WhatsApp</h1>
+  <p class="muted">Panel de administración</p>
+
+  <section class="panel">
+    <h2>Conectar API</h2>
+    <label for="base">Dirección de la API</label>
+    <input id="base" placeholder="http://localhost:3000">
+
+    <label for="token">API_TOKEN</label>
+    <input id="token" type="password" placeholder="Tu token secreto">
+
+    <button id="connect">Conectar</button>
+    <button id="disconnect" class="secondary">Desconectar</button>
+    <p id="notice" role="status">Introduce la dirección y el token.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Crear instancia</h2>
+    <input id="newId" placeholder="ID: whatsapp1" aria-label="ID de la instancia">
+    <input id="newName" placeholder="Nombre: Mi WhatsApp" aria-label="Nombre de la instancia">
+    <button id="create">Crear instancia</button>
+  </section>
+
+  <section class="panel">
+    <h2>Mis instancias</h2>
+    <button id="refresh" class="secondary">Actualizar</button>
+    <div id="tenants" class="muted">Conecta la API primero.</div>
+  </section>
+
+  <section class="panel" id="qrPanel">
+    <h2>📱 QR de WhatsApp</h2>
+    <p id="qrStatus">Selecciona una instancia y pulsa «Ver QR».</p>
+    <div id="qrContent"></div>
+    <button id="checkQR" class="secondary">Actualizar QR</button>
+  </section>
+
+  <section class="panel">
+    <h2>Mensajes recientes</h2>
+    <input id="messageTenant" placeholder="ID de la instancia" aria-label="ID de la instancia">
+    <button id="messages">Consultar mensajes</button>
+    <pre id="messageOutput">Sin mensajes cargados.</pre>
+  </section>
+
+  <section class="panel" id="flowsPanel">
+    <h2>⚙️ Flujos de respuesta</h2>
+    <p class="muted">Escribe cada respuesta automática y mírala en el chat a medida que la creas.</p>
+
+    <div class="flows-grid">
+      <div class="flows-left">
+        <label for="flowTenant">Instancia</label>
+        <div class="row">
+          <select id="flowTenant" disabled>
+            <option value="">Conecta la API primero</option>
+          </select>
+          <button id="loadFlows" class="secondary">Recargar</button>
+        </div>
+
+        <h3 id="formTitle">Nuevo flujo</h3>
+        <label for="flowTrigger">Cuando el cliente escriba</label>
+        <input id="flowTrigger" placeholder="precio" autocomplete="off">
+
+        <label for="flowResponse">El bot responde</label>
+        <textarea id="flowResponse" placeholder="Hola 👋 Nuestros precios van desde *$25.000*."></textarea>
+
+        <div class="checks">
+          <label class="check"><input type="checkbox" id="flowExact"> Solo si el mensaje es exactamente igual</label>
+          <label class="check"><input type="checkbox" id="flowEnabled" checked> Flujo activo</label>
+        </div>
+        <p id="flowHint" class="hint"></p>
+        <p id="flowWarn" class="warn" hidden></p>
+
+        <div class="row">
+          <button id="saveFlow">Guardar flujo</button>
+          <button id="cancelEdit" class="secondary" hidden>Cancelar edición</button>
+        </div>
+        <p id="flowNotice" class="flow-notice" role="status"></p>
+
+        <h3>Flujos de esta instancia</h3>
+        <div id="flowsList"></div>
+      </div>
+
+      <aside class="flows-right" aria-label="Vista previa de WhatsApp">
+        <div class="seg" role="group" aria-label="Modo de la vista previa">
+          <button id="modeView" aria-pressed="true">Cómo va quedando</button>
+          <button id="modeTest" aria-pressed="false">Probar</button>
+        </div>
+
+        <div class="phone">
+          <div class="wa-head">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            <div class="wa-avatar" id="waAvatar" aria-hidden="true">B</div>
+            <div class="wa-title">
+              <strong id="waName">Tu negocio</strong>
+              <span id="waStatus">en línea</span>
+            </div>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+          </div>
+
+          <div class="wa-chat" id="waChat" aria-live="polite"></div>
+
+          <form class="wa-input" id="waForm" autocomplete="off">
+            <div class="field">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
+              <input id="waText" placeholder="Escribe un mensaje" aria-label="Mensaje de prueba" disabled>
+            </div>
+            <button type="submit" class="wa-send" id="waSend" aria-label="Enviar mensaje de prueba" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+          </form>
+        </div>
+
+        <div class="phone-foot">
+          <span id="phoneCaption"></span>
+          <button id="clearTest" class="link" hidden>Limpiar</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HELP_TEXT = '🤖 *Menú de ayuda*\n\n!ayuda - Ver comandos\nEscribe tu consulta para recibir atención.';
+  const TICKS = '<svg viewBox="0 0 18 11" fill="none" stroke="#53bdeb" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6l3.2 3.2L11 1.5M7 8.2l1 1L15.5 1.5"/></svg>';
+
+  let connected = false;
+  let selectedId = null;
+  let qrTimer = null;
+  let qrBusy = false;
+
+  const state = {
+    tenants: new Map(),
+    tenantId: '',
+    flows: [],
+    editingId: null,
+    mode: 'view',
+    test: [],
+    pending: 0,
+    fresh: new Set(),
+    stick: true
+  };
+
+  $('base').value = location.origin;
+
+  function notify(text) {
+    $('notice').textContent = text;
+  }
+
+  function notifyFlow(text, isError) {
+    const box = $('flowNotice');
+    box.textContent = text;
+    box.classList.toggle('error', !!isError);
+  }
+
+  async function api(route, options = {}) {
+    if (!connected) throw new Error('Conecta primero la API.');
+
+    const response = await fetch(
+      $('base').value.trim().replace(/\/+$/, '') + route,
+      {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + $('token').value,
+          ...options.headers
+        }
+      }
+    );
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || 'Error HTTP ' + response.status);
+    }
+    return data;
+  }
+
+  async function action(fn) {
+    try {
+      await fn();
+    } catch (e) {
+      notify(e.message || 'Error inesperado');
+    }
+  }
+
+  async function actionFlow(fn) {
+    try {
+      await fn();
+    } catch (e) {
+      notifyFlow(e.message || 'Error inesperado', true);
+    }
+  }
+
+  /* ---------- Conexión ---------- */
+  $('connect').onclick = () => action(async () => {
+    if (!$('base').value.trim() || !$('token').value) {
+      throw new Error('Completa la dirección y el token.');
+    }
+
+    connected = true;
+    try {
+      await api('/api/tenants');
+      notify('API conectada correctamente.');
+      await refreshTenants();
+    } catch (e) {
+      connected = false;
+      throw e;
+    }
+  });
+
+  $('disconnect').onclick = () => {
+    connected = false;
+    $('token').value = '';
+    clearInterval(qrTimer);
+    qrTimer = null;
+    state.tenants = new Map();
+    state.tenantId = '';
+    state.flows = [];
+    state.test = [];
+    fillTenantSelect();
+    resetForm();
+    notify('Desconectado.');
+  };
+
+  /* ---------- Instancias ---------- */
+  async function refreshTenants() {
+    const result = await api('/api/tenants');
+    const list = $('tenants');
+    list.replaceChildren();
+
+    state.tenants = new Map((result.tenants || []).map(t => [t.id, t]));
+    fillTenantSelect();
+
+    if (!result.tenants || result.tenants.length === 0) {
+      list.textContent = 'No hay instancias. Crea una arriba.';
+      return;
+    }
+
+    for (const tenant of result.tenants) {
+      const item = document.createElement('div');
+      item.className = 'tenant';
+
+      const name = document.createElement('strong');
+      name.textContent = tenant.name || tenant.id;
+
+      const info = document.createElement('p');
+      info.className = 'muted';
+      info.textContent = 'ID: ' + tenant.id + ' | Estado: ' + tenant.status;
+
+      const start = document.createElement('button');
+      start.textContent = 'Iniciar';
+      start.onclick = () => action(async () => {
+        notify('Iniciando ' + tenant.id + '...');
+        await api('/api/tenants/' + encodeURIComponent(tenant.id) + '/start',
+          { method: 'POST' });
+        await refreshTenants();
+        await showQR(tenant.id);
+      });
+
+      const stop = document.createElement('button');
+      stop.textContent = 'Detener';
+      stop.className = 'danger';
+      stop.onclick = () => action(async () => {
+        await api('/api/tenants/' + encodeURIComponent(tenant.id) + '/stop',
+          { method: 'POST' });
+        if (selectedId === tenant.id) {
+          clearInterval(qrTimer);
+          $('qrStatus').textContent = 'Instancia detenida.';
+          $('qrContent').replaceChildren();
+        }
+        notify('Instancia detenida.');
+        await refreshTenants();
+      });
+
+      const qr = document.createElement('button');
+      qr.textContent = 'Ver QR';
+      qr.className = 'secondary';
+      qr.onclick = () => action(() => showQR(tenant.id));
+
+      const messages = document.createElement('button');
+      messages.textContent = 'Ver mensajes';
+      messages.className = 'secondary';
+      messages.onclick = () => {
+        $('messageTenant').value = tenant.id;
+        $('messages').click();
+      };
+
+      const flows = document.createElement('button');
+      flows.textContent = 'Flujos';
+      flows.className = 'secondary';
+      flows.onclick = () => actionFlow(async () => {
+        $('flowTenant').value = tenant.id;
+        await onTenantChange();
+        $('flowsPanel').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+      });
+
+      item.append(name, info, start, stop, qr, messages, flows);
+      list.append(item);
+    }
+  }
+
+  $('refresh').onclick = () => action(refreshTenants);
+
+  $('create').onclick = () => action(async () => {
+    const id = $('newId').value.trim();
+    const name = $('newName').value.trim();
+    if (!id || !name) throw new Error('Escribe ID y nombre.');
+
+    await api('/api/tenants', {
+      method: 'POST',
+      body: JSON.stringify({ id, name })
+    });
+
+    $('newId').value = '';
+    $('newName').value = '';
+    notify('Instancia creada.');
+    await refreshTenants();
+  });
+
+  /* ---------- QR ---------- */
+  async function showQR(id) {
+    selectedId = id;
+    clearInterval(qrTimer);
+    $('qrStatus').textContent = 'Buscando QR para ' + id + '...';
+    $('qrContent').replaceChildren();
+    await checkQR();
+    qrTimer = setInterval(checkQR, 2500);
+  }
+
+  async function checkQR() {
+    if (!connected || !selectedId || qrBusy) return;
+    qrBusy = true;
+
+    try {
+      const data = await api(
+        '/api/tenants/' + encodeURIComponent(selectedId) + '/status'
+      );
+
+      if (data.status === 'open') {
+        $('qrStatus').textContent = '✅ WhatsApp conectado.';
+        $('qrContent').replaceChildren();
+        clearInterval(qrTimer);
+        qrTimer = null;
+        return;
+      }
+
+      if (!data.qr) {
+        $('qrStatus').textContent =
+          'Esperando QR... Estado: ' + (data.status || 'desconocido');
+        $('qrContent').replaceChildren();
+        return;
+      }
+
+      const value = data.qr;
+      $('qrContent').replaceChildren();
+
+      if (typeof value === 'string' &&
+          /^data:image\/|^https?:\/\//i.test(value)) {
+        const img = document.createElement('img');
+        img.id = 'qrImage';
+        img.alt = 'QR de WhatsApp';
+        img.src = value;
+        $('qrContent').append(img);
+        $('qrStatus').textContent = 'Escanea el QR con WhatsApp.';
+        return;
+      }
+
+      $('qrStatus').textContent =
+        'Datos QR sin imagen: ' + value;
+    } catch (e) {
+      $('qrStatus').textContent = 'Error: ' + e.message;
+    } finally {
+      qrBusy = false;
+    }
+  }
+
+  $('checkQR').onclick = () => action(checkQR);
+
+  /* ---------- Mensajes ---------- */
+  $('messages').onclick = () => action(async () => {
+    const id = $('messageTenant').value.trim();
+    if (!id) throw new Error('Escribe el ID de la instancia.');
+    const result = await api('/api/tenants/' + encodeURIComponent(id) + '/messages');
+    $('messageOutput').textContent = JSON.stringify(result.messages, null, 2);
+    notify('Mensajes cargados.');
+  });
+
+  /* ---------- Flujos: datos ---------- */
+  function fillTenantSelect() {
+    const select = $('flowTenant');
+    const keep = state.tenantId;
+    select.replaceChildren();
+
+    if (!connected || state.tenants.size === 0) {
+      const option = el('option', '', connected ? 'Crea una instancia primero' : 'Conecta la API primero');
+      option.value = '';
+      select.append(option);
+      select.disabled = true;
+      state.tenantId = '';
+      state.flows = [];
+      renderAll();
+      return;
+    }
+
+    const placeholder = el('option', '', 'Elige una instancia');
+    placeholder.value = '';
+    select.append(placeholder);
+    for (const tenant of state.tenants.values()) {
+      const option = el('option', '', (tenant.name || tenant.id) + ' (' + tenant.id + ')');
+      option.value = tenant.id;
+      select.append(option);
+    }
+    select.disabled = false;
+
+    if (keep && state.tenants.has(keep)) {
+      select.value = keep;
+      renderAll();
+    } else if (state.tenants.size === 1) {
+      select.value = [...state.tenants.keys()][0];
+      actionFlow(onTenantChange);
+    } else {
+      state.tenantId = '';
+      state.flows = [];
+      renderAll();
+    }
+  }
+
+  async function onTenantChange() {
+    state.tenantId = $('flowTenant').value;
+    state.test = [];
+    state.stick = true;
+    resetForm(false);
+    await loadFlows();
+  }
+
+  async function loadFlows(opts = {}) {
+    const id = state.tenantId;
+    if (!id) {
+      state.flows = [];
+      renderAll();
+      return;
+    }
+    const result = await api('/api/tenants/' + encodeURIComponent(id) + '/flows');
+    if (id !== state.tenantId) return; // cambió de instancia mientras cargaba
+    const before = new Set(state.flows.map(f => f.id));
+    state.flows = result.flows || [];
+    state.fresh = opts.fresh
+      ? new Set(state.flows.filter(f => !before.has(f.id)).map(f => f.id))
+      : new Set();
+    if (opts.render !== false) renderAll();
+  }
+
+  const flowUrl = (tenantId, flowId) =>
+    '/api/tenants/' + encodeURIComponent(tenantId) + '/flows' + (flowId != null ? '/' + flowId : '');
+
+  /* ---------- Flujos: formulario ---------- */
+  function draftRule() {
+    const trigger = $('flowTrigger').value.trim();
+    const response = $('flowResponse').value.trim();
+    if (!trigger && !response) return null;
+    return {
+      id: state.editingId,
+      trigger,
+      response,
+      exact: $('flowExact').checked,
+      enabled: $('flowEnabled').checked,
+      draft: true
+    };
+  }
+
+  // Los flujos guardados, con el borrador en su lugar (o al final si es nuevo)
+  function previewRules() {
+    const draft = draftRule();
+    const rules = state.flows.map(f => (draft && f.id === state.editingId ? draft : f));
+    if (draft && state.editingId == null) rules.push(draft);
+    return rules;
+  }
+
+  function resetForm(render = true) {
+    state.editingId = null;
+    $('flowTrigger').value = '';
+    $('flowResponse').value = '';
+    $('flowExact').checked = false;
+    $('flowEnabled').checked = true;
+    if (render) renderAll();
+  }
+
+  function startEdit(flow) {
+    state.editingId = flow.id;
+    $('flowTrigger').value = flow.trigger;
+    $('flowResponse').value = flow.response;
+    $('flowExact').checked = !!flow.exact;
+    $('flowEnabled').checked = flow.enabled !== false;
+    state.stick = false;
+    renderAll();
+    $('flowTrigger').focus();
+  }
+
+  $('cancelEdit').onclick = () => resetForm();
+
+  $('saveFlow').onclick = () => actionFlow(async () => {
+    const tenantId = state.tenantId;
+    if (!tenantId) throw new Error('Elige una instancia primero.');
+    const trigger = $('flowTrigger').value.trim();
+    const response = $('flowResponse').value.trim();
+    if (!trigger || !response) {
+      throw new Error('Escribe lo que dice el cliente y lo que responde el bot.');
+    }
+    const body = JSON.stringify({
+      trigger,
+      response,
+      exact: $('flowExact').checked,
+      enabled: $('flowEnabled').checked
+    });
+
+    if (state.editingId != null) {
+      await api(flowUrl(tenantId, state.editingId), { method: 'PATCH', body });
+      notifyFlow('Flujo actualizado.');
+    } else {
+      await api(flowUrl(tenantId), { method: 'POST', body });
+      notifyFlow('Flujo guardado.');
+      state.stick = true;
+    }
+    await loadFlows({ fresh: true, render: false });
+    resetForm();
+  });
+
+  $('flowTenant').onchange = () => actionFlow(onTenantChange);
+  $('loadFlows').onclick = () => actionFlow(async () => {
+    await loadFlows();
+    notifyFlow('Flujos actualizados.');
+  });
+
+  for (const id of ['flowTrigger', 'flowResponse', 'flowExact', 'flowEnabled']) {
+    $(id).addEventListener('input', renderLive);
+    $(id).addEventListener('change', renderLive);
+  }
+
+  /* ---------- Lógica de respuesta (igual que el bot) ---------- */
+  function matchRule(rawText, rules) {
+    const text = (rawText || '').trim();
+    if (!text) return null;
+    if (text.toLowerCase() === '!ayuda') return { response: HELP_TEXT, reserved: true };
+    const input = text.toLocaleLowerCase();
+    for (const rule of rules) {
+      if (rule.enabled === false) continue;
+      if (!rule.trigger || !rule.response) continue;
+      const trigger = rule.trigger.toLocaleLowerCase();
+      const matched = rule.exact ? input === trigger : input.includes(trigger);
+      if (matched) return { response: rule.response, rule };
+    }
+    return null;
+  }
+
+  function updateHint() {
+    const draft = draftRule();
+    const hint = $('flowHint');
+    const warn = $('flowWarn');
+    const trigger = draft && draft.trigger;
+
+    if (!trigger) {
+      hint.textContent = 'Escribe lo que diría el cliente.';
+    } else if (draft.exact) {
+      hint.textContent = 'Solo responde si el mensaje es exactamente «' + trigger + '».';
+    } else {
+      hint.textContent = 'Responde a cualquier mensaje que contenga «' + trigger + '», sin importar mayúsculas.';
+    }
+
+    let message = '';
+    if (trigger && draft.enabled) {
+      const hit = matchRule(trigger, previewRules());
+      if (hit && hit.reserved) {
+        message = '«!ayuda» está reservado: el bot siempre muestra su menú de ayuda.';
+      } else if (hit && hit.rule && !hit.rule.draft) {
+        message = 'El flujo «' + hit.rule.trigger + '» va antes y también coincide con este mensaje. Responderá él primero.';
+      }
+    }
+    warn.textContent = message;
+    warn.hidden = !message;
+  }
+
+  /* ---------- Vista previa de WhatsApp ---------- */
+  const clock = () => new Date().toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' });
+
+  // *negrita*, _cursiva_, ~tachado~ y ```monoespaciado```, como en WhatsApp
+  function renderWA(target, text) {
+    const re = /```([\s\S]+?)```|\*([^*\n]+)\*|_([^_\n]+)_|~([^~\n]+)~/g;
+    const isWord = ch => !!ch && /[\p{L}\p{N}]/u.test(ch);
+    let last = 0;
+    let m;
+    while ((m = re.exec(text))) {
+      const mono = m[1] !== undefined;
+      const inner = m[1] ?? m[2] ?? m[3] ?? m[4];
+      const before = text[m.index - 1];
+      const after = text[re.lastIndex];
+      if (!mono && (isWord(before) || isWord(after) || inner !== inner.trim())) {
+        re.lastIndex = m.index + 1;
+        continue;
+      }
+      if (m.index > last) target.append(document.createTextNode(text.slice(last, m.index)));
+      const node = el(mono ? 'code' : m[2] !== undefined ? 'strong' : m[3] !== undefined ? 'em' : 's', '', inner);
+      target.append(node);
+      last = re.lastIndex;
+    }
+    if (last < text.length) target.append(document.createTextNode(text.slice(last)));
+  }
+
+  function bubble(dir, text, opts = {}) {
+    const node = el('div', 'bubble ' + dir + (opts.cont ? ' cont' : '') + (opts.ghost ? ' ghost' : ''));
+    const body = el('span', 'btext');
+    renderWA(body, text);
+    const meta = el('span', 'meta');
+    meta.append(document.createTextNode(opts.label ? opts.label + ' · ' + clock() : clock()));
+    if (dir === 'out') meta.insertAdjacentHTML('beforeend', TICKS);
+    node.append(body, meta);
+    return node;
+  }
+
+  const chip = text => el('div', 'chip', text);
+
+  function typingBubble() {
+    const node = el('div', 'bubble in');
+    const dots = el('span', 'typing');
+    dots.append(el('i'), el('i'), el('i'));
+    node.append(dots);
+    return node;
+  }
+
+  function setStatus(text) {
+    $('waStatus').textContent = text;
+  }
+
+  function renderHeader() {
+    const tenant = state.tenants.get(state.tenantId);
+    const name = tenant ? (tenant.name || tenant.id) : 'Tu negocio';
+    $('waName').textContent = name;
+    $('waAvatar').textContent = name.trim().charAt(0).toUpperCase() || 'B';
+  }
+
+  function renderView() {
+    const chat = $('waChat');
+    const previous = chat.scrollTop;
+    chat.replaceChildren(chip('Hoy'));
+
+    if (!state.tenantId) {
+      chat.append(chip(connected
+        ? 'Elige una instancia para ver sus flujos como chat.'
+        : 'Conecta la API y elige una instancia para ver sus flujos como chat.'));
+      return;
+    }
+
+    const rules = previewRules();
+    if (rules.length === 0) {
+      chat.append(chip('Aún no hay flujos. Escribe el primero y aparecerá aquí.'));
+      return;
+    }
+
+    let draftNode = null;
+    let editingNode = null;
+    for (const rule of rules) {
+      const pair = el('div', 'pair');
+      const isDraft = !!rule.draft;
+      if (isDraft) pair.classList.add('draft');
+      if (rule.enabled === false) pair.classList.add('paused');
+      if (state.fresh.has(rule.id)) pair.classList.add('pop');
+      if (!isDraft && rule.id === state.editingId) pair.classList.add('selected');
+
+      pair.append(
+        rule.trigger
+          ? bubble('out', rule.trigger)
+          : bubble('out', 'Lo que escribe el cliente…', { ghost: true }),
+        rule.response
+          ? bubble('in', rule.response)
+          : bubble('in', 'La respuesta del bot…', { ghost: true })
+      );
+
+      if (!isDraft) {
+        pair.tabIndex = 0;
+        pair.setAttribute('role', 'button');
+        pair.setAttribute('aria-label', 'Editar el flujo «' + rule.trigger + '»');
+        pair.onclick = () => startEdit(rule);
+        pair.onkeydown = ev => {
+          if (ev.key === 'Enter' || ev.key === ' ') {
+            ev.preventDefault();
+            startEdit(rule);
+          }
+        };
+      } else {
+        draftNode = pair;
+      }
+      chat.append(pair);
+    }
+    editingNode = draftNode;
+
+    if (rules.some(r => r.enabled === false)) {
+      chat.append(chip('Los flujos en gris están pausados: el bot no los responde.'));
+    }
+    state.fresh = new Set();
+
+    if (editingNode) {
+      chat.scrollTop = Math.max(0, editingNode.offsetTop + editingNode.offsetHeight - chat.clientHeight + 12);
+    } else if (state.stick) {
+      chat.scrollTop = chat.scrollHeight;
+    } else {
+      chat.scrollTop = previous;
+    }
+  }
+
+  function renderTest() {
+    const chat = $('waChat');
+    chat.replaceChildren(chip('Hoy'));
+    if (!state.tenantId) {
+      chat.append(chip('Elige una instancia para probar sus flujos.'));
+      return;
+    }
+    if (state.test.length === 0 && state.pending === 0) {
+      chat.append(chip('Escribe como si fueras el cliente y mira qué contestaría el bot.'));
+    }
+    let prev = null;
+    for (const msg of state.test) {
+      if (msg.dir === 'note') {
+        chat.append(chip(msg.text));
+        prev = null;
+        continue;
+      }
+      chat.append(bubble(msg.dir, msg.text, { cont: prev === msg.dir, label: msg.draft ? 'borrador sin guardar' : '' }));
+      prev = msg.dir;
+    }
+    if (state.pending > 0) chat.append(typingBubble());
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function renderPhone() {
+    renderHeader();
+    if (state.mode === 'test') renderTest();
+    else renderView();
+  }
+
+  function renderModeControls() {
+    const test = state.mode === 'test';
+    $('modeView').setAttribute('aria-pressed', String(!test));
+    $('modeTest').setAttribute('aria-pressed', String(test));
+    const usable = test && !!state.tenantId;
+    $('waText').disabled = !usable;
+    $('waSend').disabled = !usable;
+    $('waText').placeholder = test ? 'Escribe un mensaje' : 'Escribe en «Probar»';
+    $('clearTest').hidden = !test;
+    $('phoneCaption').textContent = test
+      ? 'Las respuestas siguen tus flujos, incluido el borrador.'
+      : 'Así verá el cliente la conversación. Toca un mensaje para editarlo.';
+  }
+
+  function setMode(mode) {
+    state.mode = mode;
+    renderModeControls();
+    renderPhone();
+    if (mode === 'test' && state.tenantId) $('waText').focus();
+  }
+
+  $('modeView').onclick = () => setMode('view');
+  $('modeTest').onclick = () => setMode('test');
+  $('clearTest').onclick = () => {
+    state.test = [];
+    renderPhone();
+  };
+
+  $('waForm').onsubmit = ev => {
+    ev.preventDefault();
+    const text = $('waText').value;
+    if (!text.trim() || state.mode !== 'test') return;
+    $('waText').value = '';
+    testSend(text.trim());
+  };
+
+  function testSend(text) {
+    state.test.push({ dir: 'out', text });
+    const hit = matchRule(text, previewRules());
+    if (!hit) {
+      state.test.push({ dir: 'note', text: 'El bot no respondería a este mensaje.' });
+      renderTest();
+      return;
+    }
+    state.pending++;
+    setStatus('escribiendo…');
+    renderTest();
+    const delay = reduceMotion ? 0 : 500 + Math.min(900, hit.response.length * 8);
+    setTimeout(() => {
+      state.pending--;
+      state.test.push({ dir: 'in', text: hit.response, draft: !!(hit.rule && hit.rule.draft) });
+      if (state.pending === 0) setStatus('en línea');
+      if (state.mode === 'test') renderTest();
+    }, delay);
+  }
+
+  /* ---------- Flujos: lista ---------- */
+  function renderList() {
+    const list = $('flowsList');
+    list.replaceChildren();
+
+    if (!state.tenantId) {
+      list.append(el('p', 'muted', connected ? 'Elige una instancia para ver sus flujos.' : 'Conecta la API primero.'));
+      return;
+    }
+    if (state.flows.length === 0) {
+      list.append(el('p', 'muted', 'Todavía no hay flujos en esta instancia. Crea el primero arriba.'));
+      return;
+    }
+
+    for (const flow of state.flows) {
+      const item = el('div', 'flow-item' + (flow.id === state.editingId ? ' is-editing' : ''));
+
+      const top = el('div', 'flow-top');
+      const title = el('div', 'flow-trigger', flow.trigger);
+      if (flow.exact) title.append(el('span', 'flow-badge', 'exacto'));
+      if (flow.enabled === false) title.append(el('span', 'flow-badge', 'pausado'));
+
+      const toggle = el('input', 'switch');
+      toggle.type = 'checkbox';
+      toggle.checked = flow.enabled !== false;
+      toggle.setAttribute('aria-label', 'Flujo «' + flow.trigger + '» activo');
+      toggle.onchange = () => actionFlow(async () => {
+        const tenantId = state.tenantId;
+        try {
+          await api(flowUrl(tenantId, flow.id), {
+            method: 'PATCH',
+            body: JSON.stringify({
+              trigger: flow.trigger,
+              response: flow.response,
+              exact: !!flow.exact,
+              enabled: toggle.checked
+            })
+          });
+        } catch (e) {
+          toggle.checked = !toggle.checked;
+          throw e;
+        }
+        notifyFlow(toggle.checked ? 'Flujo activado.' : 'Flujo pausado.');
+        state.stick = false;
+        await loadFlows();
+      });
+      top.append(title, toggle);
+
+      const preview = el('div', 'flow-resp', flow.response);
+
+      const actions = el('div', 'flow-actions');
+      const edit = el('button', 'secondary btn-sm', 'Editar');
+      edit.onclick = () => startEdit(flow);
+      const del = el('button', 'danger btn-sm', 'Eliminar');
+      del.onclick = () => actionFlow(async () => {
+        if (!confirm('¿Eliminar el flujo «' + flow.trigger + '»?')) return;
+        const tenantId = state.tenantId;
+        await api(flowUrl(tenantId, flow.id), { method: 'DELETE' });
+        if (state.editingId === flow.id) resetForm(false);
+        notifyFlow('Flujo eliminado.');
+        state.stick = false;
+        await loadFlows();
+      });
+      actions.append(edit, del);
+
+      item.append(top, preview, actions);
+      list.append(item);
+    }
+  }
+
+  function renderLive() {
+    renderPhone();
+    updateHint();
+    $('formTitle').textContent = state.editingId != null ? 'Editando flujo' : 'Nuevo flujo';
+    $('cancelEdit').hidden = state.editingId == null;
+    $('saveFlow').textContent = state.editingId != null ? 'Guardar cambios' : 'Guardar flujo';
+  }
+
+  function renderAll() {
+    renderList();
+    renderModeControls();
+    renderLive();
+  }
+
+  renderAll();
+})();
+</script>
+</body>
+</html>

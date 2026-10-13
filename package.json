@@ -1,0 +1,40 @@
+{
+  "name": "whatsapp-multitenant-saas",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/app.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/app.js",
+    "typecheck": "tsc --noEmit",
+    "loadtest": "tsx scripts/load-test.ts"
+  },
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.18",
+    "better-sqlite3": "^11.8.1",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pino": "^9.6.0",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.4",
+    "@types/qrcode": "^1.5.6",
+    "@types/qrcode-terminal": "^0.12.2",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  },
+  "allowScripts": {
+    "better-sqlite3@11.10.0": true,
+    "esbuild@0.28.2": true,
+    "protobufjs@7.6.6": true,
+    "@whiskeysockets/baileys@6.7.24": true
+  }
+}
