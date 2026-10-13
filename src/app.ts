@@ -15,7 +15,7 @@ const tenantManager = new TenantManager(db, dataDir, queue, process.env.LOG_LEVE
 await tenantManager.init();
 
 const apiToken = process.env.API_TOKEN ?? '';
-const host = process.env.HOST ?? '127.0.0.1';
+const host = process.env.HOST ?? '0.0.0.0';
 const port = Number(process.env.PORT ?? 3000);
 const app = createHttpApp({ tenantManager, db, apiToken, queue });
 const server = app.listen(port, host, () => {
